@@ -5,6 +5,8 @@
 #include <stdio.h>
 #include <string.h>
 
+#define C8_DISPLAY_HEIGHT 32
+#define C8_DISPLAY_WIDTH 64
 /*******************************************************
  * Chip 8 Registers
  *******************************************************/
@@ -29,10 +31,18 @@ struct {
 } c8_ram;
 
 /*******************************************************
+ * Chip 8 Display
+ * Each element of the array is either 1 or 0. The
+ * display is monochrome so there are only two possible
+ * values.
+ *******************************************************/
+char c8_display[C8_DISPLAY_HEIGHT][C8_DISPLAY_WIDTH];
+
+/*******************************************************
  * Prototypes
  *******************************************************/
 void c8_start(void);
-int decode_instruction(int instr);
+int c8_decode_instructions(int instr);
 int c8_jump(int addr);
 int c8_ret(void);
 void show_registers(void);
@@ -44,7 +54,7 @@ int main(void) {
   printf("Welcome To Tyler's Chip-8 Interpreter!\n");
   printf("char: %d\n", sizeof(char));
   c8_start();
-  registers.V0 = 255;
+  c8_decode_instructions(0x1666);
   show_registers();
   return 0;
 }
@@ -98,9 +108,24 @@ void c8_start(void) {
 
 /*******************************************************
  * c8_decode_instructions(int instr)
+ * The instructions are 16 bits, so we only need the
+ * lower 16 bits of the int.
  *******************************************************/
 int c8_decode_instructions(int instr) {
-  return 1;
+  //mask is 1111 0000 0000 0000b for getting bit 15
+  int op_flag = 0xF000 & instr;
+  int low_4bits = 0x0FFF;
+
+  switch(op_flag) {
+    case 0x1000:
+      printf("JP instruction\n");
+      registers.PC = instr & low_4bits;
+      break;
+    default:
+      printf("Instruction: 0x%04X NYI.\n", op_flag);
+      break;
+    }
+    return op_flag;
 }
 
 /*******************************************************
