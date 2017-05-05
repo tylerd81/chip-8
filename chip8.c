@@ -4,59 +4,13 @@
  *******************************************************/
 #include <stdio.h>
 #include <string.h>
+#include "chip8.h"
 
-#define C8_DISPLAY_HEIGHT 32
-#define C8_DISPLAY_WIDTH 64
-/*******************************************************
- * Chip 8 Registers
- *******************************************************/
-struct {
-  unsigned char V[16];
-  int I;
-  int PC; /* program counter */
-  int SP; /* stack pointer, only 8 bit but doesn't matter, will be index into stack (0-15) */
-    
-  int DT; /* delay timer */
-  int ST; /* sound timer */
-}registers;
-
-/*******************************************************
- * The Stack 
- *
- *******************************************************/
+/* globals */
+struct _registers registers;
 int stack[16];
-
-/*******************************************************
- * Chip 8 RAM
- *******************************************************/
-struct {
-  unsigned char memory[4096];
-  int used_bytes;
-  int total_mem;
-} c8_ram;
-
-/*******************************************************
- * Chip 8 Display
- * Each element of the array is either 1 or 0. The
- * display is monochrome so there are only two possible
- * values.
- *******************************************************/
-char c8_display[C8_DISPLAY_HEIGHT][C8_DISPLAY_WIDTH];
-
-/*******************************************************
- * Prototypes
- *******************************************************/
-void c8_start(void);
-unsigned int c8_fetch_instruction();
-int c8_call(int address);
-int c8_decode_instructions(unsigned int instr);
-int c8_jump(int addr);
-int c8_ret(void);
-void c8_cls(void);
-int c8_ld(int x, unsigned char b);
-void show_registers(void);
-void c8_test(void);
-void dump_stack(void);
+struct _c8_ram c8_ram;
+unsigned char c8_display[C8_DISPLAY_HEIGHT][C8_DISPLAY_WIDTH];
 
 /*******************************************************
  * main
@@ -73,14 +27,7 @@ int main(void) {
 
   c8_test();
   
-  while(status >= 0) {
-    instr = c8_fetch_instruction();  
-    status = c8_decode_instructions(instr);
-    show_registers();
-    /*  dump_stack();*/
-  }
-
-  printf("Status: %d\n", status);
+  
   return 0;
   
 }
@@ -117,33 +64,31 @@ void c8_start(void) {
   c8_ram.total_mem = 4096;
   memset(c8_ram.memory, 0, c8_ram.total_mem);
 
+  
   printf("Initialization complete.\n");
 }
 
 void c8_test(void) {
+ 
+  c8_ram.memory[0] = 0xF0;
+  c8_ram.memory[1] = 0x90;
+  c8_ram.memory[2] = 0x90;
+  c8_ram.memory[3] = 0x90;
+  c8_ram.memory[4] = 0xF0;
 
-  /* 0x220C = call to 0x20C */
-  int mem_ptr = 502;
-  int reg_ptr = 0x60;
-  int i;
+  c8_ram.memory[5] = 0xF0;
+  c8_ram.memory[6] = 0x10;
+  c8_ram.memory[7] = 0xF0;
+  c8_ram.memory[8] = 0x10;
+  c8_ram.memory[9] = 0xF0;
   
-  for(i = 0; i < 16; i++) {
-    
-    c8_ram.memory[mem_ptr++] = reg_ptr++;
-    c8_ram.memory[mem_ptr++] = 0xFF;
-  }
+  c8_clear_screen();
   
-  /* jump to 524 */
-  c8_ram.memory[500] = 0x22;
-  c8_ram.memory[501] = 0x0C;
-
-  /* kill the program */
-  c8_ram.memory[mem_ptr++] = 0xFF;
-  c8_ram.memory[mem_ptr++] = 0xFF;
-
-
-    
-  registers.PC = 502;
+  c8_draw_sprite(0, 5, 0, 0);
+  c8_draw_sprite(5, 5, 9, 0);
+  
+  dump_display();
+  
 }
 /*******************************************************
  * int c8_fetch_instruction()
@@ -210,9 +155,6 @@ int c8_decode_instructions(unsigned int instr) {
     break;
 
   case 0x6000: /* 6xkk - LD Vx, byte */
-    printf("&&& [0x%04X] &&&\n", instr);
-    printf("*** [0x%04X] ***\n", (instr & 0x0F00)>>8);
-    
     c8_ld( ((instr & 0x0F00)>>8), instr & low_4bits);
     break;
     
