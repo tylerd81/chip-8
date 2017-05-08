@@ -1,6 +1,5 @@
-
-
-
+#include <stdio.h>
+#include <SDL.h>
 /*******************************************************
  * Chip 8 Registers
  *******************************************************/
@@ -51,17 +50,27 @@ extern int stack[16];
 /* each char is representing 1 bit, it is either 1 or 0 */
 extern unsigned char c8_display[C8_DISPLAY_HEIGHT][C8_DISPLAY_WIDTH];
 
+
+#define LOG_STR_LEN 512
+extern FILE *log_file;
+
 /*******************************************************
  * Prototypes
  *******************************************************/
 void c8_start(void);
+void c8_quit(void);
+
 unsigned int c8_fetch_instruction();
+int c8_decode_instruction(unsigned int instr);
+
+/* Instructions */
 int c8_call(int address);
-int c8_decode_instructions(unsigned int instr);
 int c8_jump(int addr);
 int c8_ret(void);
 void c8_cls(void);
 int c8_ld(int x, unsigned char b);
+
+
 void show_registers(void);
 void c8_test(void);
 void dump_stack(void);
@@ -70,3 +79,12 @@ void dump_stack(void);
 void dump_display(void);
 int c8_draw_sprite(int mem_loc, int num_bytes, int x, int y);
 void c8_clear_screen(void);
+
+/* SDL specific functions */
+void draw_screen(SDL_Surface *surface, int pixel_width, int pixel_height);
+void draw_pixel(SDL_Surface *surface, int x , int y, int pixel_width, int pixel_height, unsigned int color);
+
+/* log functions */
+FILE *init_c8_log(char *filename);
+void c8_log_write(char *str);
+void c8_log_close(void);

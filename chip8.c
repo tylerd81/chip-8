@@ -15,6 +15,7 @@ unsigned char c8_display[C8_DISPLAY_HEIGHT][C8_DISPLAY_WIDTH];
 /*******************************************************
  * main
  *******************************************************/
+/*
 int main(void) {
   unsigned int instr;
   int status = 1;
@@ -31,7 +32,7 @@ int main(void) {
   return 0;
   
 }
-
+*/
 /*******************************************************
  * C8_start()
  * Initializes all the registers and the main memory.
@@ -40,7 +41,10 @@ int main(void) {
 void c8_start(void) {
 
   int i = 0;
-  printf("C8 Initializing...\n");
+
+  init_c8_log("chip8.log");
+
+  c8_log_write("C8 initializing...\n");
 
   /* initialize all the registers */
   for(i = 0; i < 16; i++) {
@@ -65,7 +69,11 @@ void c8_start(void) {
   memset(c8_ram.memory, 0, c8_ram.total_mem);
 
   
-  printf("Initialization complete.\n");
+  c8_log_write("Initialization complete.\n");
+}
+
+void c8_quit(void) {
+  c8_log_close();
 }
 
 void c8_test(void) {
@@ -86,9 +94,7 @@ void c8_test(void) {
   
   c8_draw_sprite(0, 5, 0, 0);
   c8_draw_sprite(5, 5, 9, 0);
-  
-  dump_display();
-  
+    
 }
 /*******************************************************
  * int c8_fetch_instruction()
@@ -128,14 +134,15 @@ unsigned int c8_fetch_instruction() {
  * total of 4096 bytes.
  *
  *******************************************************/
-int c8_decode_instructions(unsigned int instr) {
+int c8_decode_instruction(unsigned int instr) {
   //mask is 1111 0000 0000 0000b for getting bit 15
   unsigned int op_flag = 0xF000 & instr;
   unsigned int low_12bits = 0x0FFF;
   unsigned int low_4bits = 0x00FF;
   int address;
-
+  
   switch(op_flag) {
+    
   case 0x0000: /* 0x00EE - Ret 0x00E0 - CLS */
     if((instr & low_4bits) == 0xEE) {     
       c8_ret();
@@ -145,12 +152,10 @@ int c8_decode_instructions(unsigned int instr) {
     break;
     
   case 0x1000: /* 1nnn - JP addr */
-    printf("Jump to 0x%3X\n", instr & low_12bits);
     c8_jump(instr & low_12bits);
     break;
 
   case 0x2000: /* 2nnn - Call addr */
-    printf("Call to 0x%3X\n", instr & low_12bits);
     c8_call(instr & low_12bits);
     break;
 
@@ -158,22 +163,29 @@ int c8_decode_instructions(unsigned int instr) {
     c8_ld( ((instr & 0x0F00)>>8), instr & low_4bits);
     break;
     
-  case 0xF000:
-    printf("Killed\n");
+  case 0xF000:    
     return -1;
     
   default:
-    printf("Instruction: 0x%04X NYI.\n", op_flag);
     break;
   }
   return op_flag;
 }
 
+/*******************************************************
+ * c8_ld()
+ *
+ * LD Vx, byte
+ * Loads register Vx with byte
+ *
+ * 6xkk
+ *
+ *******************************************************/
 int c8_ld(int x, unsigned char b) {
-  printf("Loading V%d with %d\n", x, b);
   registers.V[x] = b;
   return x;
 }
+
 /*******************************************************
  * c8_call(int address)
  *
@@ -183,9 +195,11 @@ int c8_ld(int x, unsigned char b) {
  *
  *******************************************************/
 int c8_call(int address) {
+  char log_str[LOG_STR_LEN];
+  
   /* check if stack is going to overflow */
   if(registers.SP == 15) {
-    printf("Stack overflow. Exiting.\n");
+    snprintf(log_str, LOG_STR_LEN, "Stack overflow. Exiting.\n");
     return 0;
   }
 
@@ -194,6 +208,7 @@ int c8_call(int address) {
   registers.PC = address;
   return 1;
 }
+
 /*******************************************************
  * c8_jump(int addr)
  * 1nnn - JP addr
@@ -214,18 +229,19 @@ int c8_jump(int addr) {
  *
  *******************************************************/
 int c8_ret(void) {
-  printf("RET\n");
+
   registers.PC = stack[registers.SP];
+
   if(registers.SP > 0) {
     registers.SP--;
   }else{
-    printf("Attempted to pop something off the stack when nothing was there. c8_ret()\n");
+    c8_log_write("Attempted to pop something off the stack when nothing was there. c8_ret()\n");
   }
   return 1;
 }
 
 void c8_cls(void) {
-  printf("Clearing the screen....\n");
+  c8_log_write("Clearing the screen....\n");
 }
 
 /*******************************************************
