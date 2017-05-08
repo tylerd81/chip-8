@@ -160,15 +160,18 @@ int c8_decode_instruction(unsigned int instr) {
   //mask is 1111 0000 0000 0000b for getting bit 15
   unsigned int op_flag = 0xF000 & instr;
   unsigned int low_12bits = 0x0FFF;  
-  unsigned int low_4bits = 0x00FF;
+  unsigned int low_8bits = 0x00FF;
+  unsigned int low_4bits = 0x000F;
+  unsigned int x, y, op;
+  
   int address;
   
   switch(op_flag) {
     
   case 0x0000: /* 0x00EE - Ret 0x00E0 - CLS */
-    if((instr & low_4bits) == 0xEE) {     
+    if((instr & low_8bits) == 0xEE) {     
       c8_ret();
-    }else if((instr & low_4bits) == 0xE0){
+    }else if((instr & low_8bits) == 0xE0){
       c8_cls();
     }
     break;
@@ -182,11 +185,11 @@ int c8_decode_instruction(unsigned int instr) {
     break;
 
   case 0x3000: /* 3xkk - SE Vx, byte - Skips instruction */
-    c8_se(instr & 0x0F00, instr & low_4bits);
+    c8_se(instr & 0x0F00, instr & low_8bits);
     break;
 
   case 0x4000: /* 4xkk - SNE Vx, byte - skips next instruction if V[x] != byte */
-    c8_sne(instr & 0x0F00, instr & low_4bits);
+    c8_sne(instr & 0x0F00, instr & low_8bits);
     break;
 
   case 0x5000: /* 5xy0 - SE Vx, Vy - if V[x] == V[y] it skips next instruction */
@@ -194,12 +197,60 @@ int c8_decode_instruction(unsigned int instr) {
     break;
     
   case 0x6000: /* 6xkk - LD Vx, byte */
-    c8_ld( ((instr & 0x0F00)>>8), instr & low_4bits);
+    c8_ld( ((instr & 0x0F00)>>8), instr & low_8bits);
     break;
 
   case 0x7000: /* 7xkk - ADD - V[x] = V[x] + kk  */
     c8_add(instr & 0x0F00, instr & low_4bits);
     break;
+
+  case 0x8000: /* 8xy0 and 8xy1 */
+    op = instr & low_4bits;
+    x = (instr & 0x0F00) >> 8;
+    y = (instr & 0x00F0) >> 4;
+    
+    if(op == 0x0000) {
+      /* 8xy0 LD Vx, Vy - stores Vy in Vx */
+      c8_ld_vx_vy(x,y);
+      
+    }else if(op == 0x0001) {
+      /* 8xy1 OR Vx, Vy - OR's Vx and Vy and stores result in Vx */
+      c8_or_vx_vy(x,y);
+
+    }else if(op == 0x0002) {
+      /* 8xy2 AND Vx, Vy */
+      c8_and_vx_vy(x,y);
+      
+    }else if(op == 0x0003) {
+      /* 8xy3 XOR Vx, Vy */
+      c8_xor_vx_vy(x,y);
+      
+    }else if(op == 0x0004) {
+      /* 8xy4 Add Vx, Vy */
+      
+      c8_add_vx_vy(x,y);
+
+    }else if(op == 0x0005) {
+      /* 8xy5 SUB Vx, Vy */
+      c8_sub_vx_vy(x,y);
+
+    }else if(op == 0x0006) {
+      /* 8xy6 - SHR Vx (Not sure if you are supposed to implement the {, VY part} */
+      c8_shr_vx(x);
+      
+    }else if(op == 0x0007) {
+      /* 8xy7 SUBN Vx, Vy */
+      c8_subn_vx_vy(x, y);
+    }else if(op == 0x000E) {
+      /* 8xyE SHL Vx */
+      c8_shl_vx(x);
+
+    }else{
+      printf("Unknown instruction. 0x%04X\n", instr & low_4bits);
+    }
+    break;    
+
+    /* next 9xy0 */
     
   case 0xF000:
     c8_set_state(DEAD);
@@ -209,6 +260,122 @@ int c8_decode_instruction(unsigned int instr) {
     break;
   }
   return op_flag;
+}
+
+/*******************************************************
+ * c8_shl_vx(int x)
+ * Shift V[x] left 1 bit and put the bit in VF
+ *******************************************************/
+int c8_shl_vx(int x) {
+  registers.V[0x0F] = registers.V[x] & 0x80;
+  registers.V[x] <<= 1;
+  return 1;
+}
+//0111 1110 VF=0
+/*******************************************************
+ * c8_subn_vx_vy(int x, int y)
+ *
+ * Subtracts Vx from Vy and stores the result in Vx
+ *******************************************************/
+int c8_subn_vx_vy(int x, int y) {
+  if(registers.V[y] > registers.V[x]) {
+    registers.V[0x0F] = 1;
+  }else{
+    registers.V[0x0F] = 0;
+  }
+
+  registers.V[x] = registers.V[y] - registers.V[x];
+  return 1;
+}
+/*******************************************************
+ * c8_shr_vx(int x)
+ * Shift Vx to the right 1 bit.
+ * The bit that is shifted out is set to VF
+ *
+ * &&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
+ * There might be a bug here, the doc says what 
+ * looks like an optional Vy
+ * &&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
+ *******************************************************/
+int c8_shr_vx(int x) {
+  registers.V[0x0F] = 0x01 & registers.V[x];
+  registers.V[x] >>= 1;
+  return 1;
+}
+
+/*******************************************************
+ * c8_xor_vx_vy(int x, int y)
+ * XOR V[x] and V[y] and store the value in V[x]
+ *******************************************************/
+int c8_xor_vx_vy(int x, int y) {
+  registers.V[x] ^= registers.V[y];
+  return 1;
+}
+
+/*******************************************************
+ * c8_add_vx_vy(int x, int y)
+ * add V[x] and V[y] and store the value in V[x]. If the
+ * result is greater than 255 then VF is set to 1. Only 
+ * the lower 8 bits of the result are used.
+ *******************************************************/
+int c8_add_vx_vy(int x, int y) {
+  unsigned short result;
+
+  printf("%d %d\n", registers.V[x], registers.V[y]);
+  result = registers.V[x] + registers.V[y];
+  if(result > 255) {
+    registers.V[0x0F] = 1;
+  }else{
+    registers.V[0x0F] = 0;
+  }
+
+  printf("Added Result: %d\n",result);
+  registers.V[x] = result & 0x00FF;
+  return 1;
+}
+
+/*******************************************************
+ * c8_sub_vx_vy(int x, int y)
+ * if Vx > Vy then VF is set to 1, otherwise 0. 
+ * Vx - Vy and then result is store in Vx
+ *******************************************************/
+int c8_sub_vx_vy(int x, int y) {
+
+  if(registers.V[x] > registers.V[y]) {
+    registers.V[0x0F] = 1;
+  }else{
+    registers.V[0x0F] = 0;
+  }
+
+  registers.V[x] -= registers.V[y];
+  return 1;
+}
+  
+/*******************************************************
+ * c8_and_vx_vy(int x, int y)
+ * AND V[x] and V[y] and store the value in V[x]
+ *******************************************************/
+int c8_and_vx_vy(int x, int y) {
+  registers.V[x] = registers.V[x] & registers.V[y];
+  return 1;
+}
+
+/*******************************************************
+ * c8_ld_vx_vy(int x, int y)
+ * Stores the value V[y] in the V[x] register.
+ *******************************************************/
+int c8_ld_vx_vy(int x, int y) {
+  registers.V[x] = registers.V[y];
+  return 1;
+}
+
+/*******************************************************
+ * c8_or_vx_vy(int x, int y)
+ * OR the two registers and store the value in V[x]
+ *******************************************************/
+int c8_or_vx_vy(int x, int y) {
+  registers.V[x] = registers.V[x] | registers.V[y];
+  return 1;
 }
 
 /*******************************************************
@@ -393,6 +560,18 @@ void dump_stack(void) {
     }
 
     printf("{%d|0x%03X}\n", i, stack[i]);
+  }
+}
+
+void dump_mem(int start, int num_bytes) {
+  int i;
+
+  if(start + num_bytes > 4096) {
+    num_bytes -= (start + num_bytes) - 4096;
+  }
+  
+  for(int i = 0; i < num_bytes; i++) {
+    printf("0x%02X: 0x%02X\n", start + i, c8_ram.memory[start+i]);
   }
 }
 

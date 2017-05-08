@@ -28,6 +28,7 @@ extern c8_status c8_state;
  * Chip 8 RAM
  *******************************************************/
 #define C8_MAX_RAM 4096
+#define START_LOAD_ADDRESS 500
 
 struct _c8_ram {
   unsigned char memory[C8_MAX_RAM];
@@ -81,16 +82,28 @@ int c8_se(int x, unsigned char k);
 int c8_sne(int x, unsigned char k);
 int c8_se_vx_vy(int x, int y);
 int c8_add(int x, unsigned char k);
-
+int c8_ld_vx_vy(int x, int y);
+int c8_sub_vx_vy(int x, int y);
+int c8_add_vx_vy(int x, int y);
+int c8_xor_vx_vy(int x, int y);
+int c8_and_vx_vy(int x, int y);
+int c8_or_vx_vy(int x, int y);
+int c8_shr_vx(int x);
+int c8_subn_vx_vy(int x, int y);
+int c8_shl_vx(int x);
 
 void show_registers(void);
 void c8_test(void);
 void dump_stack(void);
+void dump_mem(int start, int num_bytes);
 
 /* display functions */
 void dump_display(void);
 int c8_draw_sprite(int mem_loc, int num_bytes, int x, int y);
 void c8_clear_screen(void);
+
+/* loader */
+int c8_load_from_file(char *filename);
 
 /* SDL specific functions */
 void draw_screen(SDL_Surface *surface, int pixel_width, int pixel_height);
