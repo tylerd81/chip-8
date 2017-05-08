@@ -10,11 +10,13 @@ int main(int argc, char *argv[]) {
 
   SDL_Window *window = NULL;
   SDL_Surface *screenSurface = NULL;
-  int status = -1;
+  int status = 0;
   unsigned int instr;
   unsigned int pixel_width;
   unsigned int pixel_height;
-
+  int running = 1;
+  SDL_Event event;
+  
   c8_start();
 
 
@@ -42,21 +44,42 @@ int main(int argc, char *argv[]) {
 			    SDL_WINDOW_SHOWN);
 
   screenSurface = SDL_GetWindowSurface(window);
-  
-  while(status >= 0) {
-    instr = c8_fetch_instruction();
-    status = c8_decode_instruction(instr);
+
+  show_registers();
+  c8_test();
+
+
+  while(running) {
+
+    while(SDL_PollEvent(&event)) {
+      if(event.type == SDL_QUIT) {
+	running = 0;
+      }
+      if(event.type == SDL_KEYDOWN) {
+	switch(event.key.keysym.sym) {
+	case SDLK_SPACE:
+	  show_registers();
+	  break;
+	case SDLK_RETURN:
+	  c8_set_state(RUNNING);
+	  break;
+	}
+      }
+    }
+
+    /* keep fetching and decoding as long as the status is ok 
+     * this is kept separate from the SDL loop so that SDL can
+     * continue running even if the interpreter has finished.
+     */
+    if(status >= 0 && c8_state == RUNNING) {
+      instr = c8_fetch_instruction();
+      status = c8_decode_instruction(instr);
+    }
 
     draw_screen(screenSurface, pixel_width, pixel_height);  
     SDL_UpdateWindowSurface(window);
-  }  
+  }   
 
-  c8_test();
-  
-  draw_screen(screenSurface, pixel_width, pixel_height);  
-  SDL_UpdateWindowSurface(window);
-  
-  SDL_Delay(4000);
   
   SDL_DestroyWindow(window);
   SDL_Quit();

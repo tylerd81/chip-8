@@ -10,6 +10,7 @@
 struct _registers registers;
 int stack[16];
 struct _c8_ram c8_ram;
+c8_status c8_state;
 unsigned char c8_display[C8_DISPLAY_HEIGHT][C8_DISPLAY_WIDTH];
 
 /*******************************************************
@@ -68,16 +69,21 @@ void c8_start(void) {
   c8_ram.total_mem = 4096;
   memset(c8_ram.memory, 0, c8_ram.total_mem);
 
+  c8_state = RUNNING;
   
   c8_log_write("Initialization complete.\n");
 }
 
+void c8_set_state(c8_status state) {
+  c8_state = state;
+}
+   
 void c8_quit(void) {
   c8_log_close();
 }
 
 void c8_test(void) {
- 
+  /* 
   c8_ram.memory[0] = 0xF0;
   c8_ram.memory[1] = 0x90;
   c8_ram.memory[2] = 0x90;
@@ -93,7 +99,20 @@ void c8_test(void) {
   c8_clear_screen();
   
   c8_draw_sprite(0, 5, 0, 0);
-  c8_draw_sprite(5, 5, 9, 0);
+  c8_draw_sprite(5, 5, 3, 0);
+  */
+
+  c8_ram.memory[0] = 0x60;
+  c8_ram.memory[1] = 0x12; /* put 0x12 into V0 */
+
+  c8_ram.memory[2] = 0x70;
+  c8_ram.memory[3] = 0x05; /* add 0x05 to V0 */
+
+  c8_ram.memory[4] = 0xFF;
+  c8_ram.memory[5] = 0xFF;
+
+  registers.PC = 0;
+  
     
 }
 /*******************************************************
@@ -112,6 +131,8 @@ unsigned int c8_fetch_instruction() {
    * Read next 8 bits and then OR the values together:
    * nnnnnnnnn00000000 | 00000000nnnnnnnn = nnnnnnnnnnnnnnnn
    */
+
+
   unsigned int instr = 0;
   unsigned char b1, b2;
   b1 = c8_ram.memory[registers.PC++];
@@ -120,7 +141,8 @@ unsigned int c8_fetch_instruction() {
   instr = b1;
   instr <<= 8;
   instr |= b2;
-    
+
+  printf("Got instruction 0x%04X\n", instr);
   /* each instruction is supposed to be located at an even address */
   return instr;
 }
@@ -137,7 +159,7 @@ unsigned int c8_fetch_instruction() {
 int c8_decode_instruction(unsigned int instr) {
   //mask is 1111 0000 0000 0000b for getting bit 15
   unsigned int op_flag = 0xF000 & instr;
-  unsigned int low_12bits = 0x0FFF;
+  unsigned int low_12bits = 0x0FFF;  
   unsigned int low_4bits = 0x00FF;
   int address;
   
@@ -159,17 +181,82 @@ int c8_decode_instruction(unsigned int instr) {
     c8_call(instr & low_12bits);
     break;
 
+  case 0x3000: /* 3xkk - SE Vx, byte - Skips instruction */
+    c8_se(instr & 0x0F00, instr & low_4bits);
+    break;
+
+  case 0x4000: /* 4xkk - SNE Vx, byte - skips next instruction if V[x] != byte */
+    c8_sne(instr & 0x0F00, instr & low_4bits);
+    break;
+
+  case 0x5000: /* 5xy0 - SE Vx, Vy - if V[x] == V[y] it skips next instruction */
+    c8_se_vx_vy(instr & 0x0F00, instr & 0x00F0);
+    break;
+    
   case 0x6000: /* 6xkk - LD Vx, byte */
     c8_ld( ((instr & 0x0F00)>>8), instr & low_4bits);
     break;
+
+  case 0x7000: /* 7xkk - ADD - V[x] = V[x] + kk  */
+    c8_add(instr & 0x0F00, instr & low_4bits);
+    break;
     
-  case 0xF000:    
+  case 0xF000:
+    c8_set_state(DEAD);
     return -1;
     
   default:
     break;
   }
   return op_flag;
+}
+
+/*******************************************************
+ * c8_add()
+ * Adds the value in k to V[x] and stores the sum in V[x]
+ *
+ *******************************************************/
+int c8_add(int x, unsigned char k) {
+  registers.V[x] += k;
+  return registers.V[x];
+}
+
+/*******************************************************
+ * c8_se_vx_vy()
+ * Uses the register to check if it should skip next 
+ * instruction. If V[x] == V[y] skip next instruction
+ *
+ *******************************************************/
+int c8_se_vx_vy(int x, int y) {
+  if(registers.V[x] == registers.V[y]) {
+    registers.PC += 2;
+  }
+  return 1;
+}
+
+/*******************************************************
+ * c8_sne()
+ * SNE skips next instruction if V[x] != k
+ *
+ *******************************************************/
+int c8_sne(int x, unsigned char k) {
+  if(registers.V[x] != k) {
+    registers.PC += 2;
+  }
+  return 1;
+}
+
+/*******************************************************
+ * c8_se()
+ * SE skips the next instruction is V[x] == k
+ *
+ *******************************************************/
+int c8_se(int x, unsigned char k) {
+  if(registers.V[x] == k) {
+    registers.PC += 2;
+  }
+
+  return 1;
 }
 
 /*******************************************************
@@ -250,7 +337,23 @@ void c8_cls(void) {
  *******************************************************/
 void show_registers(void) {
 
+  char state[20];
+
+  switch(c8_state) {
+  case RUNNING:
+    sprintf(state, "Running");
+    break;
+  case PAUSED:
+    sprintf(state, "Paused");
+    break;
+
+  case DEAD:
+    sprintf(state, "Dead");
+    break;
+  }
+  
   printf("-------------------------------------------------------\n");
+  printf("State: %s\n", state);
   printf("| (V0-VF)                                             |\n");
 
   printf("| [V0: 0x%02X] [V1: 0x%02X] [V2: 0x%02X] [V3: 0x%02X]         |\n",

@@ -1,5 +1,12 @@
 #include <stdio.h>
 #include <SDL.h>
+
+typedef enum c8_status {
+  RUNNING,
+  PAUSED,
+  DEAD
+} c8_status;
+
 /*******************************************************
  * Chip 8 Registers
  *******************************************************/
@@ -15,6 +22,7 @@ struct _registers {
   int ST; /* sound timer */
 };
 extern struct _registers registers;
+extern c8_status c8_state;
 
 /*******************************************************
  * Chip 8 RAM
@@ -59,7 +67,7 @@ extern FILE *log_file;
  *******************************************************/
 void c8_start(void);
 void c8_quit(void);
-
+void c8_set_state(c8_status state);
 unsigned int c8_fetch_instruction();
 int c8_decode_instruction(unsigned int instr);
 
@@ -69,6 +77,10 @@ int c8_jump(int addr);
 int c8_ret(void);
 void c8_cls(void);
 int c8_ld(int x, unsigned char b);
+int c8_se(int x, unsigned char k);
+int c8_sne(int x, unsigned char k);
+int c8_se_vx_vy(int x, int y);
+int c8_add(int x, unsigned char k);
 
 
 void show_registers(void);
