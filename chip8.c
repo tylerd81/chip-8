@@ -76,6 +76,9 @@ void c8_start(void) {
   c8_ram.total_mem = 4096;
   memset(c8_ram.memory, 0, c8_ram.total_mem);
 
+  c8_init_keyboard();
+  c8_load_fonts();
+  
   c8_state = RUNNING;
   
   c8_log_write("Initialization complete.\n");

@@ -20,7 +20,6 @@ int main(int argc, char *argv[]) {
   
   
   c8_start();
-  c8_load_fonts();
   c8_load_from_file("test.bin");
   
   /* calculate the pixel width and height
