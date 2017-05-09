@@ -1,11 +1,19 @@
 #include <stdio.h>
 #include <SDL.h>
 
+/******************************************************
+ * Chip 8 Status
+ ******************************************************/
 typedef enum c8_status {
   RUNNING,
   PAUSED,
   DEAD
 } c8_status;
+
+/*******************************************************
+ * Chip 8 Keyboard
+ *******************************************************/
+#define C8_NUM_KEYS 16
 
 /*******************************************************
  * Chip 8 Registers
@@ -111,9 +119,17 @@ void c8_clear_screen(void);
 int c8_load_from_file(char *filename);
 int c8_load_fonts(void);
 
+/* keyboard functions */
+int c8_init_keyboard(void);
+int c8_keydown(int keynum);
+int c8_keyup(int keynum);
+int c8_get_key_state(int keynum);
+void dump_key_state(void);
+
 /* SDL specific functions */
 void draw_screen(SDL_Surface *surface, int pixel_width, int pixel_height);
 void draw_pixel(SDL_Surface *surface, int x , int y, int pixel_width, int pixel_height, unsigned int color);
+int get_key(SDL_Keycode keycode);
 
 /* log functions */
 FILE *init_c8_log(char *filename);

@@ -55,15 +55,32 @@ int main(int argc, char *argv[]) {
       }
       if(event.type == SDL_KEYDOWN) {
 	switch(event.key.keysym.sym) {
+	case SDLK_q:
+	  running = 0;
+	  break;
+	  
 	case SDLK_SPACE:
 	  show_registers();
 	  break;
 	case SDLK_RETURN:
 	  dump_mem(0, 16);
 	  break;
+	case SDLK_k:
+	  dump_key_state();
+	  break;
+	  
+	default:
+	  c8_keydown(get_key(event.key.keysym.sym));
+	  break;  
 	}
       }
+      
+      if(event.type == SDL_KEYUP) {
+	c8_keyup(get_key(event.key.keysym.sym));
+      }
     }
+  
+
 
     /* keep fetching and decoding as long as the status is ok 
      * this is kept separate from the SDL loop so that SDL can
@@ -83,6 +100,79 @@ int main(int argc, char *argv[]) {
   SDL_Quit();
   c8_quit();
   return 0;
+}
+
+int get_key(SDL_Keycode keycode) {
+  int key = -1;
+  
+  switch(keycode) {
+  case SDLK_0:
+    key = 0;
+    break;
+    
+  case SDLK_1:
+    key = 1;
+    break;
+
+  case SDLK_2:
+    key = 2;
+    break;
+
+  case SDLK_3:
+    key = 3;
+    break;
+
+  case SDLK_4:
+    key = 4;
+    break;
+
+  case SDLK_5:
+    key = 5;
+    break;
+    
+  case SDLK_6:
+    key = 6;
+    break;
+    
+  case SDLK_7:
+    key = 7;
+    break;
+    
+  case SDLK_8:
+    key = 8;
+    break;
+    
+  case SDLK_9:
+    key = 9;
+    break;
+    
+  case SDLK_a:
+    key = 10;
+    break;
+    
+  case SDLK_b:
+    key = 11;
+    break;
+    
+  case SDLK_c:
+    key = 12;
+    break;
+    
+  case SDLK_d:
+    key = 13;
+    break;
+    
+  case SDLK_e:
+    key = 14;
+    break;
+    
+  case SDLK_f:
+    key = 15;
+    break;
+   
+  }  
+
+  return key;  
 }
 
 void draw_screen(SDL_Surface *surface, int pixel_width, int pixel_height) {
