@@ -12,7 +12,7 @@ typedef enum c8_status {
  *******************************************************/
 struct _registers {
   unsigned char V[16];
-  int I;
+  unsigned int I;
   int PC; /* program counter */
 
   /* stack pointer, only 8 bit but doesn't matter, will be index into stack (0-15) */
@@ -91,6 +91,11 @@ int c8_or_vx_vy(int x, int y);
 int c8_shr_vx(int x);
 int c8_subn_vx_vy(int x, int y);
 int c8_shl_vx(int x);
+int c8_sne_vx_vy(int x, int y);
+int c8_ld_i(unsigned int i);
+int c8_jp_v0(int addr);
+int c8_rnd(int x, int b);
+int c8_drw(int x, int y, int num_bytes);
 
 void show_registers(void);
 void c8_test(void);
@@ -104,6 +109,7 @@ void c8_clear_screen(void);
 
 /* loader */
 int c8_load_from_file(char *filename);
+int c8_load_fonts(void);
 
 /* SDL specific functions */
 void draw_screen(SDL_Surface *surface, int pixel_width, int pixel_height);

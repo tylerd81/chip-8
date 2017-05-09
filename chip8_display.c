@@ -33,6 +33,9 @@ int c8_draw_sprite(int mem_loc, int num_bytes, int x, int y) {
    * was a collision.
    */
 
+  /* TODO: The sprites are supposed to wrap around to the other side of the 
+   * screen if they go passed the boundaries of the screen.
+   */
   int i;
   unsigned char read_byte, cur_bit;
   int bit_counter;

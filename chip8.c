@@ -4,6 +4,8 @@
  *******************************************************/
 #include <stdio.h>
 #include <string.h>
+#include <stdlib.h>
+#include <time.h>
 #include "chip8.h"
 
 /* globals */
@@ -249,8 +251,38 @@ int c8_decode_instruction(unsigned int instr) {
       printf("Unknown instruction. 0x%04X\n", instr & low_4bits);
     }
     break;    
+    
+  case 0x9000:
+    /* 9xy0 - SNE Vx, Vy */
+    x = (instr & 0x0F00) >> 8;
+    y = (instr & 0x00F0) >> 4;
+    c8_sne_vx_vy(x, y);
+    break;
 
-    /* next 9xy0 */
+  case 0xA000:
+    /* Annn LD I, addr */
+    c8_ld_i(instr & low_12bits);
+    break;
+
+  case 0xB000:
+    /* Bnnn - JP V0, addr */
+    c8_jp_v0(instr & low_12bits);
+    break;
+
+  case 0xC000:
+    /* Cxkk - RND Vx, byte */
+    x = (instr & 0x0F00) >> 8;
+    op = (instr & low_8bits);
+    c8_rnd(x, op);
+    break;
+
+  case 0xD000:
+    /* Dxyn - DRW Vx, Vy, nibble */
+    x = (instr & 0x0F00) >> 8;
+    y = (instr & 0x00F0) >> 4;
+    op = instr & low_4bits;
+    c8_drw(x,y,op);
+    break;
     
   case 0xF000:
     c8_set_state(DEAD);
@@ -260,6 +292,62 @@ int c8_decode_instruction(unsigned int instr) {
     break;
   }
   return op_flag;
+}
+
+/*******************************************************
+ * c8_drw(int x, int y, int num_bytes)
+ * Draw the sprite located in memory location I.
+ * V[x], V[y] is the (x,y) location on the screen.
+ *******************************************************/
+int c8_drw(int x, int y, int num_bytes) {
+  c8_draw_sprite(registers.I, num_bytes, registers.V[x], registers.V[y]);
+  return 1;  
+}
+
+/*******************************************************
+ * c8_rnd(int x, int b)
+ * Generate a random number from 0 to 255 and then AND
+ * that value with b. The result is store in V[x]
+ *******************************************************/
+int c8_rnd(int x, int b) {
+  int r;
+  srand(time(NULL));
+
+  r = rand()%255;
+  r &= b;
+
+  printf("Random: 0x%02X\n", r);
+  
+  registers.V[x] = r;
+  return 1;
+}
+/*******************************************************
+ * c8_jp_v0(int addr)
+ * Sets PC to V0 + addr
+ *******************************************************/
+int c8_jp_v0(int addr) {
+  registers.PC = registers.V[0] + addr;
+  return 0;
+}
+
+/*******************************************************
+ * c8_ld_i(unsigned int i) 
+ * Sets I = to i
+ *******************************************************/
+int c8_ld_i(unsigned int i) {
+  registers.I = i;
+  return 1;
+}
+
+/*******************************************************
+ * c8_sne_vx_vy(int x, int y)
+ * Skips the next instruction if Vx != Vy
+ *******************************************************/
+int c8_sne_vx_vy(int x, int y) {
+  if(registers.V[x] != registers.V[y]) {
+    registers.PC += 2;
+  }
+  return 1;
 }
 
 /*******************************************************

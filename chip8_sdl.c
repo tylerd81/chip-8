@@ -18,8 +18,9 @@ int main(int argc, char *argv[]) {
   SDL_Event event;
   
   c8_start();
+  c8_load_fonts();
   c8_load_from_file("test.bin");
-
+  
   /* calculate the pixel width and height
    * The Chip 8 display is 64x32 pixels
    * pixel size:
@@ -58,7 +59,7 @@ int main(int argc, char *argv[]) {
 	  show_registers();
 	  break;
 	case SDLK_RETURN:
-	  dump_mem(START_LOAD_ADDRESS, 16);
+	  dump_mem(0, 16);
 	  break;
 	}
       }
