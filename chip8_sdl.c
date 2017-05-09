@@ -16,6 +16,8 @@ int main(int argc, char *argv[]) {
   unsigned int pixel_height;
   int running = 1;
   SDL_Event event;
+  int key, key_status;
+  
   
   c8_start();
   c8_load_fonts();
@@ -70,13 +72,19 @@ int main(int argc, char *argv[]) {
 	  break;
 	  
 	default:
-	  c8_keydown(get_key(event.key.keysym.sym));
+	  key = get_key(event.key.keysym.sym);
+	  key_status =  c8_keydown(key);
+
+	  if(key_status == 1 && c8_state == WAITING_FOR_KEY) {
+	    c8_got_keypress(key);
+	  }
 	  break;  
 	}
       }
       
       if(event.type == SDL_KEYUP) {
-	c8_keyup(get_key(event.key.keysym.sym));
+	key = get_key(event.key.keysym.sym);
+	c8_keyup(key);
       }
     }
   

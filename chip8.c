@@ -15,6 +15,11 @@ struct _c8_ram c8_ram;
 c8_status c8_state;
 unsigned char c8_display[C8_DISPLAY_HEIGHT][C8_DISPLAY_WIDTH];
 
+/* keypress_register will hold the register number that the 
+ * keypress should be saved in while in WAITING_FOR_KEY state
+ */
+int keypress_register;
+
 /*******************************************************
  * main
  *******************************************************/
@@ -283,15 +288,115 @@ int c8_decode_instruction(unsigned int instr) {
     op = instr & low_4bits;
     c8_drw(x,y,op);
     break;
+
+  case 0xE000:
+    op = instr & low_8bits;
+    x = (instr & 0x0F00) >> 8;
     
+    /* Ex9E */
+    if(op == 0x9E) { /* SKP Vx */
+      c8_skp_vx(x);
+    }else if(op == 0xA1) { /* SKNP Vx */
+      /* ExA1 */
+      c8_sknp_vx(x);
+    }
+    break;
+
   case 0xF000:
-    c8_set_state(DEAD);
-    return -1;
+    op = instr & low_8bits;
+    x = (instr & 0x0F00) >> 8;
+
+    if(op == 0x07) {
+      c8_ld_vx_dt(x);
+      
+    }else if(op == 0x0A) {
+      c8_wait_for_keypress(x);
+      
+    }else if(op == 0x15) {
+      c8_ld_dt_vx(x);
+      
+    }else if(op == 0x18) {
+      c8_ld_st_vx(x);
+    }
+    
+    if((instr & 0xFFFF) == 0xFFFF) {
+      c8_set_state(DEAD);    
+      return -1;
+    }
+    break;
     
   default:
     break;
   }
   return op_flag;
+}
+
+/*******************************************************
+ * c8_ld_vx_dt(int x)
+ * Loads the value in the DT register into V[x]
+ *******************************************************/
+int c8_ld_vx_dt(int x) {
+  registers.V[x] = registers.DT;
+  return 1;
+}
+
+/*******************************************************
+ * c8_wait_for_keypress(int x)
+ * This function will set the state of the emulator to 
+ * WAITING_FOR_KEY. It will also set the keypress_register
+ * value to x.
+ *******************************************************/
+int c8_wait_for_keypress(int x) {
+  c8_set_state(WAITING_FOR_KEY);
+  printf("Waiting for keypress...\n");
+  keypress_register = x;
+  return 1;
+}
+
+int c8_got_keypress(int key) {
+  printf("got keypress...\n");
+  registers.V[keypress_register] = key;
+  
+  registers.PC += 2;
+  
+  c8_set_state(RUNNING);
+  return 1;
+}
+
+/*******************************************************
+ * c8_ld_dt_vx(int x)
+ ******************************************************/
+int c8_ld_dt_vx(int x) {
+  return 1;
+}
+
+/*******************************************************
+ * c8_ld_st_vx(int x)
+ *******************************************************/
+int c8_ld_st_vx(int x) {
+  return 1;
+}
+
+/*******************************************************
+ * c8_skp_vx(int key)
+ * Skip the next instruction if the key is pressed.
+ *******************************************************/
+int c8_skp_vx(int key) {
+  if(c8_get_key_state(key) == 1) {
+    registers.PC += 2;
+  }
+  return 1;
+}
+
+/*******************************************************
+ * c8_sknp_vx(int key)
+ * Skip the next instruction if the key is NOT pressed.
+ *******************************************************/
+int c8_sknp_vx(int key) {
+  if(c8_get_key_state(key) == 0) {
+    registers.PC += 2;
+  }
+  return 1;
 }
 
 /*******************************************************
@@ -604,6 +709,9 @@ void show_registers(void) {
 
   case DEAD:
     sprintf(state, "Dead");
+    break;
+  case WAITING_FOR_KEY:
+    sprintf(state, "Waiting for key");
     break;
   }
   

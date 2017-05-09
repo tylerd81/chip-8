@@ -47,7 +47,7 @@ int c8_load_fonts(void) {
   
   int start_addr = 0x00;
 
-  memcpy(&c8_ram.memory[start_addr], fonts, 35);  
+  memcpy(&c8_ram.memory[start_addr], fonts, 36);  
   return 1;
 }
   

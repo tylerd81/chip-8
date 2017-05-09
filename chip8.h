@@ -7,14 +7,15 @@
 typedef enum c8_status {
   RUNNING,
   PAUSED,
-  DEAD
+  DEAD,
+  WAITING_FOR_KEY
 } c8_status;
 
 /*******************************************************
  * Chip 8 Keyboard
  *******************************************************/
 #define C8_NUM_KEYS 16
-
+extern int keypress_register;
 /*******************************************************
  * Chip 8 Registers
  *******************************************************/
@@ -67,7 +68,6 @@ extern int stack[16];
 /* each char is representing 1 bit, it is either 1 or 0 */
 extern unsigned char c8_display[C8_DISPLAY_HEIGHT][C8_DISPLAY_WIDTH];
 
-
 #define LOG_STR_LEN 512
 extern FILE *log_file;
 
@@ -104,6 +104,13 @@ int c8_ld_i(unsigned int i);
 int c8_jp_v0(int addr);
 int c8_rnd(int x, int b);
 int c8_drw(int x, int y, int num_bytes);
+int c8_skp_vx(int key);
+int c8_sknp_vx(int key);
+int c8_ld_vx_dt(int x);
+int c8_wait_for_keypress(int x);
+int c8_got_keypress(int key);
+int c8_ld_dt_vx(int x);
+int c8_ld_st_vx(int x);
 
 void show_registers(void);
 void c8_test(void);
