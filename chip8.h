@@ -11,6 +11,10 @@ typedef enum c8_status {
   WAITING_FOR_KEY
 } c8_status;
 
+#define FONT_ADDRESS 0x00
+#define FONT_WIDTH 1 /* number of bytes wide */
+#define FONT_HEIGHT 6 /* number of bytes high */
+
 /*******************************************************
  * Chip 8 Keyboard
  *******************************************************/
@@ -111,6 +115,11 @@ int c8_wait_for_keypress(int x);
 int c8_got_keypress(int key);
 int c8_ld_dt_vx(int x);
 int c8_ld_st_vx(int x);
+int c8_add_i_vx(int x);
+int c8_ld_f_vx(int x);
+int c8_ld_b_vx(int x);
+int c8_ld_i_vx(int x);
+int c8_ld_vx_i(int x);
 
 void show_registers(void);
 void c8_test(void);

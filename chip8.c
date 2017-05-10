@@ -195,15 +195,15 @@ int c8_decode_instruction(unsigned int instr) {
     break;
 
   case 0x3000: /* 3xkk - SE Vx, byte - Skips instruction */
-    c8_se(instr & 0x0F00, instr & low_8bits);
+    c8_se((instr & 0x0F00) >> 8, instr & low_8bits);
     break;
 
   case 0x4000: /* 4xkk - SNE Vx, byte - skips next instruction if V[x] != byte */
-    c8_sne(instr & 0x0F00, instr & low_8bits);
+    c8_sne((instr & 0x0F00) >> 8, instr & low_8bits);
     break;
 
   case 0x5000: /* 5xy0 - SE Vx, Vy - if V[x] == V[y] it skips next instruction */
-    c8_se_vx_vy(instr & 0x0F00, instr & 0x00F0);
+    c8_se_vx_vy((instr & 0x0F00) >> 8, (instr & 0x00F0) >> 4);
     break;
     
   case 0x6000: /* 6xkk - LD Vx, byte */
@@ -211,7 +211,7 @@ int c8_decode_instruction(unsigned int instr) {
     break;
 
   case 0x7000: /* 7xkk - ADD - V[x] = V[x] + kk  */
-    c8_add(instr & 0x0F00, instr & low_4bits);
+    c8_add((instr & 0x0F00) >> 8, instr & low_8bits);
     break;
 
   case 0x8000: /* 8xy0 and 8xy1 */
@@ -320,6 +320,21 @@ int c8_decode_instruction(unsigned int instr) {
       
     }else if(op == 0x18) {
       c8_ld_st_vx(x);
+
+    }else if(op == 0x1E) {      
+      c8_add_i_vx(x);
+      
+    }else if(op == 0x29) {
+      c8_ld_f_vx(x); /* load the location of the sprite into I */
+      
+    }else if(op == 0x33) {
+      c8_ld_b_vx(x); /* Store the BCD value at mem address I */
+      
+    }else if(op == 0x55) {
+      c8_ld_i_vx(x); /* store V0 - Vx at mem address I */
+      
+    }else if(op == 0x65) {
+      c8_ld_vx_i(x); /* read values at mem address I into V0 - Vx */
     }
     
     if((instr & 0xFFFF) == 0xFFFF) {
@@ -332,6 +347,37 @@ int c8_decode_instruction(unsigned int instr) {
     break;
   }
   return op_flag;
+}
+
+/******************** NYI **************************/
+int c8_add_i_vx(int x) {
+  return 1;
+}
+
+/***************************************************
+ * c8_ld_f_vx(int x)
+ * Sets I equal to the memory address of sprite for
+ * the value that is store in V[x].
+ ***************************************************/
+int c8_ld_f_vx(int x) {
+  registers.I = FONT_ADDRESS + (registers.V[x] * (FONT_WIDTH * FONT_HEIGHT));
+  printf("Font At: 0x%04X\n", registers.I);
+  return 1;
+}
+
+/******************** NYI **************************/
+int c8_ld_b_vx(int x) {
+  return 1;
+}
+
+/******************** NYI **************************/
+int c8_ld_i_vx(int x) {
+  return 1;
+}
+
+/******************** NYI **************************/
+int c8_ld_vx_i(int x) {
+  return 1;
 }
 
 /*******************************************************
@@ -360,7 +406,7 @@ int c8_got_keypress(int key) {
   printf("got keypress...\n");
   registers.V[keypress_register] = key;
   
-  registers.PC += 2;
+  /*registers.PC += 2;*/
   
   c8_set_state(RUNNING);
   return 1;
@@ -580,6 +626,7 @@ int c8_or_vx_vy(int x, int y) {
  *
  *******************************************************/
 int c8_add(int x, unsigned char k) {
+  printf("Adding %d to V%d\n", k, x);
   registers.V[x] += k;
   return registers.V[x];
 }

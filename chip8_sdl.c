@@ -20,7 +20,7 @@ int main(int argc, char *argv[]) {
   
   
   c8_start();
-  c8_load_from_file("test.bin");
+  c8_load_from_file("display.bin");
   
   /* calculate the pixel width and height
    * The Chip 8 display is 64x32 pixels
@@ -67,7 +67,7 @@ int main(int argc, char *argv[]) {
 	  dump_mem(0, 16);
 	  break;
 	case SDLK_k:
-	  dump_key_state();
+	  dump_display();
 	  break;
 	  
 	default:
@@ -185,15 +185,18 @@ int get_key(SDL_Keycode keycode) {
 void draw_screen(SDL_Surface *surface, int pixel_width, int pixel_height) {
 
   int x, y;
-  unsigned int color = SDL_MapRGB(surface->format, 0, 255, 0);
-
+  unsigned int on_color = SDL_MapRGB(surface->format, 0, 255, 0);
+  unsigned int off_color = SDL_MapRGB(surface->format, 0, 0, 0);
+  
   /* clear the screen */
   SDL_FillRect(surface, NULL, SDL_MapRGB(surface->format, 0, 0, 0));
 
-  for(y = 0; y < C8_DISPLAY_WIDTH; y++) {
-    for(x = 0; x < C8_DISPLAY_HEIGHT; x++) {
+  for(y = 0; y < C8_DISPLAY_HEIGHT; y++) {
+    for(x = 0; x < C8_DISPLAY_WIDTH; x++) {
       if(c8_display[y][x] == 1) {
-	draw_pixel(surface, x, y, pixel_width, pixel_height, color);
+	draw_pixel(surface, x, y, pixel_width, pixel_height, on_color);
+      }else{
+	draw_pixel(surface, x, y, pixel_width, pixel_height, off_color);
       }
     }
   }
@@ -208,7 +211,7 @@ void draw_pixel(SDL_Surface *surface, int x, int y, int pixel_width,
   rect.y = y * pixel_height;
   rect.w = pixel_width;
   rect.h = pixel_height;
-
+  
   SDL_FillRect(surface, &rect, color);
 }
 
