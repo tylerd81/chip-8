@@ -349,8 +349,13 @@ int c8_decode_instruction(unsigned int instr) {
   return op_flag;
 }
 
-/******************** NYI **************************/
+/***************************************************
+ * c8_add_i_vx(int x)
+ * add I + V[x] and store the results in I 
+ *
+ ***************************************************/
 int c8_add_i_vx(int x) {
+  registers.V[x] += registers.I;
   return 1;
 }
 
@@ -365,8 +370,25 @@ int c8_ld_f_vx(int x) {
   return 1;
 }
 
-/******************** NYI **************************/
+/***************************************************
+ * Loads memory address I, I+1, and I+2 with the
+ * BCD value of V[x].
+ *
+ ***************************************************/
 int c8_ld_b_vx(int x) {
+  unsigned char h,t,o; /* hundreds, tens, ones */
+  int ptr_ctr;
+    
+  h = x / 100;
+  x %= 100;
+  t = x / 10;
+  o = x % 10;
+
+  c8_ram.memory[registers.I] = h;
+  c8_ram.memory[registers.I + 1] = t;
+  c8_ram.memory[registers.I + 2] = o;
+  
+
   return 1;
 }
 
