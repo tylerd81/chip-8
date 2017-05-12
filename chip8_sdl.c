@@ -17,10 +17,26 @@ int main(int argc, char *argv[]) {
   int running = 1;
   SDL_Event event;
   int key, key_status;
+
+  /*
+  char binfile[20];
+  int bytesize;
+
   
+  printf("BIN File to load: ");
+  scanf("%s", &binfile);
+  printf("Bytes: ");
+  scanf("%d", &bytesize);
+  */
   
   c8_start();
-  c8_load_from_file("display.bin");
+  /*c8_load_from_file("display.bin");*/
+  
+  status = c8_load_bin("../c8games/WIPEOFF", 206);
+  if(status == 0) {
+    printf("Error loading the BIN file.");
+    return 0;
+  }
   
   /* calculate the pixel width and height
    * The Chip 8 display is 64x32 pixels
@@ -47,7 +63,7 @@ int main(int argc, char *argv[]) {
 
   screenSurface = SDL_GetWindowSurface(window);
 
-  
+
   while(running) {
 
     while(SDL_PollEvent(&event)) {
@@ -64,10 +80,18 @@ int main(int argc, char *argv[]) {
 	  show_registers();
 	  break;
 	case SDLK_RETURN:
-	  dump_mem(0, 16);
+	  dump_mem(512, 16);
 	  break;
 	case SDLK_k:
 	  dump_display();
+	  break;
+
+	case SDLK_p:
+	  c8_set_state(PAUSED);
+	  break;
+
+	case SDLK_r:
+	  c8_set_state(RUNNING);
 	  break;
 	  
 	default:

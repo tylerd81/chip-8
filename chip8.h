@@ -41,7 +41,7 @@ extern c8_status c8_state;
  * Chip 8 RAM
  *******************************************************/
 #define C8_MAX_RAM 4096
-#define START_LOAD_ADDRESS 500
+#define START_LOAD_ADDRESS 0x200
 
 struct _c8_ram {
   unsigned char memory[C8_MAX_RAM];
@@ -133,6 +133,7 @@ void c8_clear_screen(void);
 
 /* loader */
 int c8_load_from_file(char *filename);
+int c8_load_bin(char *filename, int num_bytes);
 int c8_load_fonts(void);
 
 /* keyboard functions */

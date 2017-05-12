@@ -152,7 +152,7 @@ unsigned int c8_fetch_instruction() {
   instr <<= 8;
   instr |= b2;
 
-  printf("Got instruction 0x%04X\n", instr);
+  /*  printf("Got instruction 0x%04X\n", instr);*/
   /* each instruction is supposed to be located at an even address */
   return instr;
 }
@@ -344,6 +344,7 @@ int c8_decode_instruction(unsigned int instr) {
     break;
     
   default:
+    printf("Unknown Instruction\n");	   
     break;
   }
   return op_flag;
@@ -366,7 +367,7 @@ int c8_add_i_vx(int x) {
  ***************************************************/
 int c8_ld_f_vx(int x) {
   registers.I = FONT_ADDRESS + (registers.V[x] * (FONT_WIDTH * FONT_HEIGHT));
-  printf("Font At: 0x%04X\n", registers.I);
+  /*  printf("Font At: 0x%04X\n", registers.I);*/
   return 1;
 }
 
@@ -392,13 +393,32 @@ int c8_ld_b_vx(int x) {
   return 1;
 }
 
-/******************** NYI **************************/
+/***************************************************
+ * LD [I], Vx
+ * Store the values in V0 - V[x] into memory starting
+ * at I.
+ ***************************************************/
 int c8_ld_i_vx(int x) {
+  int i;
+
+  for(i = 0; i < x; i++) {
+    c8_ram.memory[registers.I + i] = registers.V[i];
+  }
   return 1;
 }
 
-/******************** NYI **************************/
+/******************************************************
+ * LD V[x], [I]
+ * Load V0 through V[x] with the values starting at 
+ * memory address I.
+ *
+ ******************************************************/
 int c8_ld_vx_i(int x) {
+  int i = 0;
+
+  for(i = 0; i < x; i++) {
+    registers.V[x] = c8_ram.memory[registers.I + i];
+  }
   return 1;
 }
 
@@ -491,8 +511,6 @@ int c8_rnd(int x, int b) {
 
   r = rand()%255;
   r &= b;
-
-  printf("Random: 0x%02X\n", r);
   
   registers.V[x] = r;
   return 1;
@@ -585,7 +603,6 @@ int c8_xor_vx_vy(int x, int y) {
 int c8_add_vx_vy(int x, int y) {
   unsigned short result;
 
-  printf("%d %d\n", registers.V[x], registers.V[y]);
   result = registers.V[x] + registers.V[y];
   if(result > 255) {
     registers.V[0x0F] = 1;
@@ -593,7 +610,6 @@ int c8_add_vx_vy(int x, int y) {
     registers.V[0x0F] = 0;
   }
 
-  printf("Added Result: %d\n",result);
   registers.V[x] = result & 0x00FF;
   return 1;
 }
@@ -648,7 +664,6 @@ int c8_or_vx_vy(int x, int y) {
  *
  *******************************************************/
 int c8_add(int x, unsigned char k) {
-  printf("Adding %d to V%d\n", k, x);
   registers.V[x] += k;
   return registers.V[x];
 }

@@ -56,16 +56,25 @@ int c8_draw_sprite(int mem_loc, int num_bytes, int x, int y) {
        * a reason to copy it to the display?
        * this might mess up collision detection.
        */
+      result =  c8_display[y + i][x + bit_counter] ^ cur_bit;
+      c8_display[y + i][x + bit_counter] = result;
+
+      if(result == 0) { /* collision detected */	  
+	registers.V[0x0F] = 1;
+      }
+
+      /*
       if(cur_bit) {
 	result = c8_display[y + i][x + bit_counter] ^ cur_bit;
 	
 	if(result == 0) { /* collision detected */
+      /*
 	  registers.V[0x0F] = 1;
 	}
       }else{
 	result = 0;
       }
-      c8_display[y + i][x + bit_counter] = result;
+      c8_display[y + i][x + bit_counter] = result;*/
     }
   }
   return 1;

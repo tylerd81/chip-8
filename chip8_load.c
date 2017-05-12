@@ -37,6 +37,29 @@ int c8_load_from_file(char *filename) {
   return bytes_read;
 }
 
+int c8_load_bin(char *filename, int num_bytes) {
+  FILE *fp;
+
+  int bytes_read = 0;
+
+  unsigned char *mem_ptr = &c8_ram.memory[START_LOAD_ADDRESS];  
+    
+  fp = fopen(filename, "rb");
+  if(fp == NULL) {
+    printf("Error opening %s\n", filename);
+    return 0;
+  }
+  
+  /* read the data into memory */
+  bytes_read = fread(mem_ptr, sizeof(char), num_bytes, fp);
+
+  fclose(fp);
+
+  registers.PC = START_LOAD_ADDRESS;
+
+  return bytes_read;
+}
+
 int c8_load_fonts(void) {
   unsigned char fonts[] = {0xf0, 0x90, 0x90, 0x90, 0xf0, 0x00, /* 0 */
 			   0x20, 0x60, 0x20, 0x20, 0x70, 0x00, /* 1 */
