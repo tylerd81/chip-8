@@ -6,6 +6,8 @@
 #define C8_WINDOW_WIDTH 1024
 #define C8_WINDOW_HEIGHT 768
 
+unsigned int timer_callback(unsigned int interval, void *p);
+
 int main(int argc, char *argv[]) {
 
   SDL_Window *window = NULL;
@@ -15,10 +17,14 @@ int main(int argc, char *argv[]) {
   unsigned int pixel_width;
   unsigned int pixel_height;
   int running = 1;
-  SDL_Event event;
-  int key, key_status;
 
-  /*
+  SDL_TimerID timer_id;
+  SDL_Event event;
+  
+  int key, key_status;
+  int go = 0;
+  
+  
   char binfile[20];
   int bytesize;
 
@@ -27,12 +33,13 @@ int main(int argc, char *argv[]) {
   scanf("%s", &binfile);
   printf("Bytes: ");
   scanf("%d", &bytesize);
-  */
+  
   
   c8_start();
   /*c8_load_from_file("display.bin");*/
+
   
-  status = c8_load_bin("../c8games/WIPEOFF", 206);
+  status = c8_load_bin(binfile, bytesize);
   if(status == 0) {
     printf("Error loading the BIN file.");
     return 0;
@@ -49,7 +56,7 @@ int main(int argc, char *argv[]) {
   pixel_width = C8_WINDOW_WIDTH / 64;
   pixel_height = C8_WINDOW_HEIGHT / 32;
   
-  if(SDL_Init(SDL_INIT_VIDEO < 0)) {
+  if(SDL_Init(SDL_INIT_VIDEO | SDL_INIT_TIMER) < 0) {
     printf("Error initializing SDL\n");
     return 0;
   }
@@ -64,8 +71,15 @@ int main(int argc, char *argv[]) {
   screenSurface = SDL_GetWindowSurface(window);
 
 
+  /*setup the timer 
+    The timer ticks 60 times a second
+  */
+  timer_id = SDL_AddTimer(1000 / 60, timer_callback, NULL);  
+  
+  c8_set_state(PAUSED);
+  
   while(running) {
-
+      
     while(SDL_PollEvent(&event)) {
       if(event.type == SDL_QUIT) {
 	running = 0;
@@ -90,7 +104,18 @@ int main(int argc, char *argv[]) {
 	  c8_set_state(PAUSED);
 	  break;
 
+	case SDLK_g:
+	  c8_set_state(RUNNING);
+	  go = 1;
+	  break;
+	  
 	case SDLK_r:
+	  c8_set_state(RUNNING);
+	  
+	  instr = c8_fetch_instruction();
+	  printf("Executing: 0x%04X\n", instr);
+	  status = c8_decode_instruction(instr);
+
 	  c8_set_state(RUNNING);
 	  break;
 	  
@@ -117,20 +142,30 @@ int main(int argc, char *argv[]) {
      * this is kept separate from the SDL loop so that SDL can
      * continue running even if the interpreter has finished.
      */
-    if(status >= 0 && c8_state == RUNNING) {
-      instr = c8_fetch_instruction();
-      status = c8_decode_instruction(instr);
-    }
 
+    if(go) {
+      if(status >= 0 && c8_state == RUNNING) {
+	instr = c8_fetch_instruction();
+	status = c8_decode_instruction(instr);
+      }
+    }
+    
     draw_screen(screenSurface, pixel_width, pixel_height);  
     SDL_UpdateWindowSurface(window);
   }   
 
-  
+  SDL_RemoveTimer(timer_id);
   SDL_DestroyWindow(window);
   SDL_Quit();
   c8_quit();
   return 0;
+}
+
+unsigned int timer_callback(unsigned int interval, void *p) {
+  if(is_timer_running()) {
+    c8_timer_tick();
+  }    
+  return interval;
 }
 
 int get_key(SDL_Keycode keycode) {

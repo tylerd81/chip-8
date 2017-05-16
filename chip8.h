@@ -2,9 +2,19 @@
 #include <SDL.h>
 
 /******************************************************
+ * Chip 8 Timer
+ ******************************************************/
+typedef enum {
+  TIMER_RUNNING,
+  TIMER_PAUSED,
+  TIMER_STOPPED
+}_c8_timer_status;
+extern _c8_timer_status c8_timer_status;
+
+/******************************************************
  * Chip 8 Status
  ******************************************************/
-typedef enum c8_status {
+typedef enum _c8_status {
   RUNNING,
   PAUSED,
   DEAD,
@@ -130,6 +140,10 @@ void dump_mem(int start, int num_bytes);
 void dump_display(void);
 int c8_draw_sprite(int mem_loc, int num_bytes, int x, int y);
 void c8_clear_screen(void);
+
+/* timer functions */
+int is_timer_running(void);
+void c8_timer_tick(void);
 
 /* loader */
 int c8_load_from_file(char *filename);

@@ -356,7 +356,7 @@ int c8_decode_instruction(unsigned int instr) {
  *
  ***************************************************/
 int c8_add_i_vx(int x) {
-  registers.V[x] += registers.I;
+  registers.I += registers.V[x];
   return 1;
 }
 
@@ -458,6 +458,10 @@ int c8_got_keypress(int key) {
  * c8_ld_dt_vx(int x)
  ******************************************************/
 int c8_ld_dt_vx(int x) {
+  registers.DT = registers.V[x];
+
+  /* start the timer */
+  c8_timer_status = TIMER_RUNNING;
   return 1;
 }
 
@@ -775,7 +779,7 @@ int c8_ret(void) {
 }
 
 void c8_cls(void) {
-  c8_log_write("Clearing the screen....\n");
+  c8_clear_screen();
 }
 
 /*******************************************************

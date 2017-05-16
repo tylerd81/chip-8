@@ -46,7 +46,7 @@ int c8_load_bin(char *filename, int num_bytes) {
     
   fp = fopen(filename, "rb");
   if(fp == NULL) {
-    printf("Error opening %s\n", filename);
+    printf("Error opning %s\n", filename);
     return 0;
   }
   
