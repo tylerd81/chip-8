@@ -145,14 +145,15 @@ unsigned int c8_fetch_instruction() {
 
   unsigned int instr = 0;
   unsigned char b1, b2;
-  b1 = c8_ram.memory[registers.PC++];
-  b2 = c8_ram.memory[registers.PC++];
+  b1 = c8_ram.memory[registers.PC];
+  b2 = c8_ram.memory[registers.PC + 1];
 
+  registers.PC += 2;
   instr = b1;
   instr <<= 8;
   instr |= b2;
 
-  /*  printf("Got instruction 0x%04X\n", instr);*/
+  printf("Got instruction 0x%04X\n", instr);
   /* each instruction is supposed to be located at an even address */
   return instr;
 }
@@ -356,6 +357,7 @@ int c8_decode_instruction(unsigned int instr) {
  *
  ***************************************************/
 int c8_add_i_vx(int x) {
+
   registers.I += registers.V[x];
   return 1;
 }
@@ -366,7 +368,12 @@ int c8_add_i_vx(int x) {
  * the value that is store in V[x].
  ***************************************************/
 int c8_ld_f_vx(int x) {
+  printf("Loading font %d (from register %d)\n", registers.V[x],x);
+  
   registers.I = FONT_ADDRESS + (registers.V[x] * (FONT_WIDTH * FONT_HEIGHT));
+
+  printf("Loaded at 0x%X\n", registers.I);
+  
   /*  printf("Font At: 0x%04X\n", registers.I);*/
   return 1;
 }
@@ -377,19 +384,27 @@ int c8_ld_f_vx(int x) {
  *
  ***************************************************/
 int c8_ld_b_vx(int x) {
-  unsigned char h,t,o; /* hundreds, tens, ones */
+  unsigned char h = 0, t = 0, o = 0; /* hundreds, tens, ones */
   int ptr_ctr;
-    
-  h = x / 100;
-  x %= 100;
-  t = x / 10;
-  o = x % 10;
+  unsigned char val = registers.V[x];
+
+  printf("VAlue to save: %d\n", val);
+  if(val >= 100) {
+    h = val / 100;
+    val %= 100;
+  }
+
+  if(val >= 10) {
+    t = val / 10;
+  }
+  
+  o = val % 10;
 
   c8_ram.memory[registers.I] = h;
   c8_ram.memory[registers.I + 1] = t;
   c8_ram.memory[registers.I + 2] = o;
-  
 
+  printf("BCD: 0x%02X 0x%02X 0x%02X\n", h, t, o);
   return 1;
 }
 
@@ -415,9 +430,14 @@ int c8_ld_i_vx(int x) {
  ******************************************************/
 int c8_ld_vx_i(int x) {
   int i = 0;
-
-  for(i = 0; i < x; i++) {
-    registers.V[x] = c8_ram.memory[registers.I + i];
+  unsigned char mem;
+  
+  for(i = 0; i <= x; i++) {
+    mem = c8_ram.memory[registers.I + i];
+    
+    registers.V[i] = c8_ram.memory[registers.I + i];
+    
+    printf("read value: 0x%02X into register V%d\n", mem, i);    
   }
   return 1;
 }
@@ -515,7 +535,7 @@ int c8_rnd(int x, int b) {
 
   r = rand()%255;
   r &= b;
-  
+  printf("Rand: %d\n", r);
   registers.V[x] = r;
   return 1;
 }
@@ -614,7 +634,7 @@ int c8_add_vx_vy(int x, int y) {
     registers.V[0x0F] = 0;
   }
 
-  registers.V[x] = result & 0x00FF;
+  registers.V[x] = result;
   return 1;
 }
 
@@ -641,6 +661,7 @@ int c8_sub_vx_vy(int x, int y) {
  *******************************************************/
 int c8_and_vx_vy(int x, int y) {
   registers.V[x] = registers.V[x] & registers.V[y];
+  printf("AND: 0x%02X\n", registers.V[x]);
   return 1;
 }
 
@@ -669,7 +690,8 @@ int c8_or_vx_vy(int x, int y) {
  *******************************************************/
 int c8_add(int x, unsigned char k) {
   registers.V[x] += k;
-  return registers.V[x];
+
+  return 1;
 }
 
 /*******************************************************
@@ -721,7 +743,7 @@ int c8_se(int x, unsigned char k) {
  *******************************************************/
 int c8_ld(int x, unsigned char b) {
   registers.V[x] = b;
-  return x;
+  return 1;
 }
 
 /*******************************************************

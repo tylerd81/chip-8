@@ -38,7 +38,7 @@ int main(int argc, char *argv[]) {
   c8_start();
   /*c8_load_from_file("display.bin");*/
 
-  
+ 
   status = c8_load_bin(binfile, bytesize);
   if(status == 0) {
     printf("Error loading the BIN file.");
